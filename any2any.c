@@ -6,34 +6,16 @@
 #include <emmintrin.h>
 
 
-// ==========================================================
-//  Base64 Library — PRO Edition
-//  Features:
-//   ✔ Table inverse rapide
-//   ✔ Decode ignore whitespace
-//   ✔ Encode streaming (chunk 3→4)
-//   ✔ Option wrap=76 façon GNU base64
-//   ✔ Mode ultra-rapide (LUT optimisé)
-//   ✔ Mode stdin/stdout
-//   ✔ Makefile-ready design
-//   ✔ AVX/SSE2 accélération si disponible
-// ==========================================================
 
 static const char base64_table[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 static unsigned char base64_inv[256];
 
-// ----------------------------------------------------------
-// Initialise la table inverse
-// ----------------------------------------------------------
 void init_base64_inv() {
     for (int i = 0; i < 256; i++) base64_inv[i] = 255;
     for (int i = 0; i < 64; i++) base64_inv[(unsigned char)base64_table[i]] = i;
     base64_inv['='] = 0;
 }
 
-// ----------------------------------------------------------
-// Encode un bloc de 3 octets → 4 caractères Base64
-// ----------------------------------------------------------
 static inline void encode_block(const unsigned char in[3], size_t len, char out[4]) {
     uint32_t triple = (in[0] << 16) | ((len > 1 ? in[1] : 0) << 8) | (len > 2 ? in[2] : 0);
 
@@ -43,9 +25,6 @@ static inline void encode_block(const unsigned char in[3], size_t len, char out[
     out[3] = (len > 2) ? base64_table[triple & 0x3F] : '=';
 }
 
-// ----------------------------------------------------------
-// Encode fichier → fichier (streaming + wrap optionnel)
-// ----------------------------------------------------------
 void encode_file(const char *infile, const char *outfile, int wrap) {
     FILE *fin = (strcmp(infile, "-") == 0) ? stdin : fopen(infile, "rb");
     if (!fin) { perror("input"); exit(1); }
@@ -63,7 +42,7 @@ void encode_file(const char *infile, const char *outfile, int wrap) {
         fwrite(out, 1, 4, fout);
         col += 4;
         if (wrap > 0 && col >= wrap) {
-            fputc('\n', fout);  // correction ici
+            fputc('\n', fout);  
             col = 0;
         }
     }
@@ -73,12 +52,9 @@ void encode_file(const char *infile, const char *outfile, int wrap) {
     if (fin != stdin) fclose(fin);
     if (fout != stdout) fclose(fout);
 
-    printf("Encodage terminé → %s\n", outfile);
+    printf("Encoding finished → %s\n", outfile);
 }
 
-// ----------------------------------------------------------
-// Decode entier buffer Base64 (ignore whitespace)
-// ----------------------------------------------------------
 unsigned char *base64_decode(const char *input, size_t len, size_t *out_len) {
     // Nettoyer whitespace
     char *clean = malloc(len);
@@ -127,9 +103,6 @@ unsigned char *base64_decode(const char *input, size_t len, size_t *out_len) {
     return out;
 }
 
-// ----------------------------------------------------------
-// Decode fichier → fichier
-// ----------------------------------------------------------
 void decode_file(const char *infile, const char *outfile) {
     FILE *fin = (strcmp(infile, "-") == 0) ? stdin : fopen(infile, "r");
     if (!fin) { perror("input"); exit(1); }
@@ -142,7 +115,7 @@ void decode_file(const char *infile, const char *outfile) {
     if (!buffer) { perror("malloc"); exit(1); }
 
     fread(buffer, 1, size, fin);
-    buffer[size] = '\0';  // correction ici
+    buffer[size] = '\0';  
 
     if (fin != stdin) fclose(fin);
 
@@ -151,7 +124,7 @@ void decode_file(const char *infile, const char *outfile) {
     free(buffer);
 
     if (!decoded) {
-        fprintf(stderr, "Décodage Base64 échec : caractères invalides\n");
+        fprintf(stderr, "Decode failed , invalid caracthers\n");
         exit(1);
     }
 
@@ -163,22 +136,17 @@ void decode_file(const char *infile, const char *outfile) {
     if (fout != stdout) fclose(fout);
     free(decoded);
 
-    printf("Décodage terminé → %s\n", outfile);
+    printf("Decoding finished → %s\n", outfile);
 }
 
-// ----------------------------------------------------------
-// Usage
-// ----------------------------------------------------------
+
 void usage(const char *p) {
     printf("Usage:\n");
     printf("  %s encode <in> <out> [--wrap 76]\n", p);
     printf("  %s decode <in> <out>\n", p);
-    printf("  Utiliser '-' pour stdin/stdout\n");
+    printf("  Use '-' for stdin/stdout\n");
 }
 
-// ----------------------------------------------------------
-// Main
-// ----------------------------------------------------------
 int main(int argc, char *argv[]) {
     init_base64_inv();
 
